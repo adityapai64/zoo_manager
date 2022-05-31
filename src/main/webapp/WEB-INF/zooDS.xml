@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE datasources>
+<datasources>
+	<datasource jndi-name="java:jboss/datasources/zooDS"
+		pool-name="test_db" enabled="true" use-java-context="true"
+		statistics-enabled="true">
+		<connection-url>jdbc:h2:~/zoo</connection-url>
+		<driver>h2</driver>
+		<security>
+			<user-name>sa</user-name>
+			<password></password>
+		</security>
+	</datasource>
+</datasources>
