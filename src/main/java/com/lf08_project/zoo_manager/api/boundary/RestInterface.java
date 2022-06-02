@@ -8,14 +8,15 @@ import com.lf08_project.zoo_manager.api.client.ManagerCO;
 import com.lf08_project.zoo_manager.api.client.ShowAnimalsResultCO;
 import com.lf08_project.zoo_manager.api.client.ShowBirdsResultCO;
 import com.lf08_project.zoo_manager.api.client.ShowManagersResultCO;
+import com.lf08_project.zoo_manager.api.client.ZooAnimalCO;
 
 public interface RestInterface {
 	public ShowManagersResultCO showAllManagers ();
 	public ShowAnimalsResultCO showAllAnimals ();
 	public ShowBirdsResultCO showAllBirds ();
 	public ManagerCO searchManager(IDedRequest request);
-	public AnimalCO searchAnimal(IDedRequest request);
-	public BirdCO searchBird (IDedRequest request);
+	public ZooAnimalCO searchAnimal(IDedRequest request);
+	//public BirdCO searchBird (IDedRequest request);
 	public DefaultResultCO addManager (ManagerCO request);
 	public DefaultResultCO addAnimal (AnimalCO request);
 	public DefaultResultCO addBird (BirdCO request);

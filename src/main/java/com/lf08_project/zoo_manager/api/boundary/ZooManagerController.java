@@ -46,12 +46,13 @@ public class ZooManagerController implements RestInterface {
 	private static final String SHOW_ALL_BIRDS = "SELECT * FROM zooAnimals WHERE TYPE = ?";
 	private static final String SEARCH_MANAGER = "SELECT * FROM zooManagers FULL JOIN zooAnimals "
 			+ "ON (zooManagers.manager_id = zooAnimals.manager_id) WHERE zooAnimals.manager_id = ?";
+	private static final String SEARCH_ZOO_ANIMAL = "SELECT * FROM zooAnimals WHERE zoo_animal_id = ?";
 	private static final String ADD_MANAGER = "INSERT INTO zooManagers (NAME) VALUES (?)";
 	private static final String ADD_ANIMAL = "INSERT INTO zooAnimals ("
 			+ "zoo_animal_id, manager_id, animal_name, "
 			+ "type, sub_type, breed) VALUES (?, ?, ?, ?, ?, ?)";
 	private static final String ADD_BIRD = "INSERT INTO zooAnimals ("
-			+ "zoo_animal_id, manager_id, name, "
+			+ "zoo_animal_id, manager_id, animal_name, "
 			+ "type, sub_type, breed, flightless) VALUES (?, ?, ?, ?, ?, ?, ?)";
 	private static final String UPDATE_MANAGER = "UPDATE zooManagers SET name = ? "
 			+ "WHERE manager_id = ?";
@@ -115,8 +116,9 @@ public class ZooManagerController implements RestInterface {
 					manager.setManagerId(rs.getInt("manager_id"));
 					manager.setZooAnimalsList(new ArrayList<>());
 					map.put(managerId, manager);
+					managerList.add(manager);
 				}
-				if (rs.getString("type").equals("Animal")) {
+				if (rs.getString("type") != null && rs.getString("type").equals("Animal")) {
 					AnimalCO animal = new AnimalCO();
 					animal.setId(rs.getInt("zoo_animal_id"));
 					animal.setName(rs.getString("animal_name"));
@@ -124,7 +126,7 @@ public class ZooManagerController implements RestInterface {
 					animal.setSubType(rs.getString("sub_type"));
 					animal.setBreed(rs.getString("breed"));
 					manager.getZooAnimalsList().add(animal);
-				} else {
+				} else if (rs.getString("type") != null) {
 					BirdCO bird = new BirdCO();
 					bird.setId(rs.getInt("zoo_animal_id"));
 					bird.setName(rs.getString("animal_name"));
@@ -134,14 +136,13 @@ public class ZooManagerController implements RestInterface {
 					bird.setFlightless(rs.getBoolean("flightless"));
 					manager.getZooAnimalsList().add(bird);
 				}
-				managerList.add(manager);
-				result.setManagerList(managerList); 
 			} 
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
 			close(con, ps, rs);
 		}
+		result.setManagerList(managerList); 
 		return result;
 	}
 	
@@ -224,7 +225,7 @@ public class ZooManagerController implements RestInterface {
  		Connection con = null;
 		ResultSet rs = null;
 		PreparedStatement ps = null;
-		ManagerCO result = new ManagerCO();
+		ManagerCO result = null;
 		List<ZooAnimalCO> animalList = new ArrayList<>();
 		try {
 			con = ds.getConnection();
@@ -238,7 +239,7 @@ public class ZooManagerController implements RestInterface {
 					result.setManagerId(rs.getInt("manager_id"));
 					result.setName(rs.getString("name"));
 				}
-				if (rs.getString("type") == "Animal") {
+				if (rs.getString("type") != null && rs.getString("type").equals("Animal")) {
 					AnimalCO animal = new AnimalCO();
 					animal.setId(rs.getInt("zoo_animal_id"));
 					animal.setManagerId(rs.getInt("manager_id"));
@@ -247,7 +248,7 @@ public class ZooManagerController implements RestInterface {
 					animal.setSubType(rs.getString("sub_type"));
 					animal.setBreed(rs.getString("breed"));
 					animalList.add(animal);
-				} else {
+				} else if (rs.getString("type") != null) {
 					BirdCO bird = new BirdCO();
 					bird.setId(rs.getInt("zoo_animal_id"));
 					bird.setManagerId(rs.getInt("manager_id"));
@@ -269,64 +270,73 @@ public class ZooManagerController implements RestInterface {
 	}
 
 	@Override
-	@Path("searchAnimal")
+	@Path("searchZooAnimal")
 	@POST
-	public AnimalCO searchAnimal(IDedRequest request) {
+	public ZooAnimalCO searchAnimal(IDedRequest request) {
 		Connection con = null;
 		ResultSet rs = null;
 		PreparedStatement ps = null;
-		AnimalCO animal = new AnimalCO();
-		String query = SHOW_ALL_ANIMALS + " WHERE zoo_animal_id = ?";
+		ZooAnimalCO result = null;
 		int index = 1;
 		try {
 			con = ds.getConnection();
-			ps = con.prepareStatement(query);
-			ps.setString(index++, "Animal");
+			ps = con.prepareStatement(SEARCH_ZOO_ANIMAL);
 			ps.setInt(index++, request.getId());
 			rs = ps.executeQuery();
-			animal.setId(rs.getInt("zoo_animal_id"));
-			animal.setManagerId(rs.getInt("manager_id"));
-			animal.setName(rs.getString("animal_name"));
-			animal.setType(rs.getString("type"));
-			animal.setSubType(rs.getString("sub_type"));
-			animal.setBreed(rs.getString("breed"));
+			if (rs.next() && rs.getString("type").equals("Animal")) {
+				result = new AnimalCO();
+				result.setId(rs.getInt("zoo_animal_id"));
+				result.setManagerId(rs.getInt("manager_id"));
+				result.setName(rs.getString("animal_name"));
+				result.setType(rs.getString("type"));
+				result.setSubType(rs.getString("sub_type"));
+				result.setBreed(rs.getString("breed"));
+			} else if (rs.next()) {
+				result = new BirdCO();
+				result.setId(rs.getInt("zoo_animal_id"));
+				result.setManagerId(rs.getInt("manager_id"));
+				result.setName(rs.getString("animal_name"));
+				result.setType(rs.getString("type"));
+				result.setSubType(rs.getString("sub_type"));
+				result.setBreed(rs.getString("breed"));
+			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
 			close(con, ps, rs);
 		}
-		return animal;
+		return result;
 	}
 
-	@Override
-	@Path("searchBird")
-	@POST
-	public BirdCO searchBird(IDedRequest request) {
-		Connection con = null;
-		ResultSet rs = null;
-		PreparedStatement ps = null;
-		BirdCO bird = new BirdCO();
-		String query = SHOW_ALL_ANIMALS + " WHERE zoo_animal_id = ?";
-		int index = 1;
-		try {
-			con = ds.getConnection();
-			ps = con.prepareStatement(query);
-			ps.setString(index++, "Bird");
-			ps.setInt(index++, request.getId());
-			rs = ps.executeQuery();
-			bird.setId(rs.getInt("zoo_animal_id"));
-			bird.setManagerId(rs.getInt("manager_id"));
-			bird.setName(rs.getString("animal_name"));
-			bird.setType(rs.getString("type"));
-			bird.setSubType(rs.getString("sub_type"));
-			bird.setBreed(rs.getString("breed"));
-		} catch (SQLException e) {
-			e.printStackTrace();
-		} finally {
-			close(con, ps, rs);
-		}
-		return bird;
-	}
+//	@Override
+//	@Path("searchBird")
+//	@POST
+//	public BirdCO searchBird(IDedRequest request) {
+//		Connection con = null;
+//		ResultSet rs = null;
+//		PreparedStatement ps = null;
+//		BirdCO bird = new BirdCO();
+//		String query = SHOW_ALL_ANIMALS + " WHERE zoo_animal_id = ?";
+//		int index = 1;
+//		try {
+//			con = ds.getConnection();
+//			ps = con.prepareStatement(query);
+//			ps.setString(index++, "Bird");
+//			ps.setInt(index++, request.getId());
+//			rs = ps.executeQuery();
+//			bird.setId(rs.getInt("zoo_animal_id"));
+//			bird.setManagerId(rs.getInt("manager_id"));
+//			bird.setName(rs.getString("animal_name"));
+//			bird.setType(rs.getString("type"));
+//			bird.setSubType(rs.getString("sub_type"));
+//			bird.setBreed(rs.getString("breed"));
+//		} catch (SQLException e) {
+//			e.printStackTrace();
+//		} finally {
+//			close(con, ps, rs);
+//		}
+//		return bird;
+//	}
 
 	@Override
 	@Path("addManager")
